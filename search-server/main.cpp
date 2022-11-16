@@ -513,8 +513,8 @@ void TestSearchServer() {
 
 // --------- Окончание модульных тестов поисковой системы -----------
 
-//int main() {
-//    TestSearchServer();
-//    // Если вы видите эту строку, значит все тесты прошли успешно
-//    cout << "Search server testing finished"s << endl;
-//}
+int main() {
+    TestSearchServer();
+    // Если вы видите эту строку, значит все тесты прошли успешно
+    cout << "Search server testing finished"s << endl;
+}
