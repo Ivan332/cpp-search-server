@@ -89,11 +89,11 @@ public:
     template <typename StringContainer>
     explicit SearchServer(const StringContainer& stop_words)
         : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        for (const string& stop_word : MakeUniqueNonEmptyStrings(stop_words))
+        for (const string& stop_word : stop_words_)
         {
             if (!IsValidWord(stop_word))
             {
-                throw invalid_argument("Not Valid Stop Words");
+                throw invalid_argument("Not Valid Word: " + stop_word);
             }
         }
     }
@@ -102,18 +102,26 @@ public:
         : SearchServer(
             SplitIntoWords(stop_words_text))  // Invoke delegating constructor from string container
     {
-        if (!IsValidWord(stop_words_text))
-        {
-            throw invalid_argument("Not Valid Stop Words");
-        }
     }
 
     void AddDocument(int document_id, const string& document, DocumentStatus status,
         const vector<int>& ratings) {
-        if (document_id < 0 || !IsValidWord(document) || documents_.count(document_id)) {
-            throw invalid_argument("Not Valid Argument");
+        if (document_id < 0) 
+        {
+            throw invalid_argument("Document Id < 0");
         }
-        documentIds_.push_back(document_id);
+
+        if (!IsValidWord(document)) 
+        {
+            throw invalid_argument("Not Valid Document");
+        }
+
+        if (documents_.count(document_id)) 
+        {
+            throw invalid_argument("Document With This Id Exists");
+        }
+
+        document_ids_.push_back(document_id);
         const vector<string> words = SplitIntoWordsNoStop(document);
         const double inv_word_count = 1.0 / words.size();
         for (const string word : words) {
@@ -124,10 +132,6 @@ public:
 
     template <typename DocumentPredicate>
     vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        if (!IsQueryValid(raw_query))
-        {
-            throw invalid_argument("Not Valid Reqest");
-        }
         const Query query = ParseQuery(raw_query);
         auto matched_documents = FindAllDocuments(query, document_predicate);
 
@@ -148,10 +152,6 @@ public:
     }
 
     vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
-        if (!IsQueryValid(raw_query))
-        {
-            throw invalid_argument("Not Valid reqest");
-        }
         return FindTopDocuments(
             raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
                 return document_status == status;
@@ -159,10 +159,6 @@ public:
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
-        if (!IsQueryValid(raw_query))
-        {
-            throw invalid_argument("Not Valid reqest");
-        }
         return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
     }
 
@@ -203,7 +199,7 @@ public:
         {
             throw out_of_range("Out of range Id");
         }
-        return documentIds_[i];
+        return document_ids_[i];
     }
 
 private:
@@ -214,7 +210,7 @@ private:
     const set<string> stop_words_;
     map<string, map<int, double>> word_to_document_freqs_;
     map<int, DocumentData> documents_;
-    vector<int> documentIds_;
+    vector<int> document_ids_;
 
     bool IsStopWord(const string& word) const {
         return stop_words_.count(word) > 0;
@@ -234,10 +230,7 @@ private:
         if (ratings.empty()) {
             return 0;
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
+        int rating_sum = accumulate(ratings.begin(), ratings.end(), 0);
         return rating_sum / static_cast<int>(ratings.size());
     }
 
@@ -248,6 +241,11 @@ private:
     };
 
     QueryWord ParseQueryWord(string text) const {
+        if (!IsQueryValid(text)) 
+        {
+            throw invalid_argument("Not Valid reqest");
+        }
+
         bool is_minus = false;
         // Word shouldn't be empty
         if (text[0] == '-') {
