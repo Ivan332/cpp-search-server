@@ -9,6 +9,8 @@
 #include <algorithm>
 #include <tuple>
 #include <map>
+#include <iterator>
+#include <ostream>
 
 class SearchServer {
 public:
@@ -65,10 +67,25 @@ public:
 
     size_t GetDocumentCount() const;
 
-    int GetDocumentId(int index) const;
-
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query,
         int document_id) const;
+
+    std::vector<int>::iterator begin();
+
+    std::vector<int>::iterator end();
+
+    const std::map<std::string, double>& GetWordFrequencies(int document_id) const {
+        if (frequencies_words_in_documents_.find(document_id) != frequencies_words_in_documents_.end())
+        {
+            return frequencies_words_in_documents_.at(document_id);
+        }
+        else
+        {
+            return empty_map;
+        }
+    }
+
+    void RemoveDocument(int document_id);
 
 private:
     struct DocumentData {
@@ -90,6 +107,9 @@ private:
         std::set<std::string> plus_words;
         std::set<std::string> minus_words;
     };
+
+    std::map<int, std::map<std::string, double>> frequencies_words_in_documents_;
+    std::map<std::string, double> empty_map;
 
     bool IsStopWord(const std::string& word) const;
 
@@ -153,3 +173,6 @@ private:
         return matched_documents;
     }
 };
+
+void AddDocument(SearchServer& search_server, int document_id, const std::string& document, DocumentStatus status,
+    const std::vector<int>& ratings);
