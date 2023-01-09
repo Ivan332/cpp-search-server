@@ -4,33 +4,30 @@
 #include <map>
 #include <set>
 #include <string>
+#include <iterator>
 
 void RemoveDuplicates(SearchServer& search_server) {
-    std::vector<int> ids;
-    std::map<int, std::set<std::string>> docs;
+    std::vector<int> duplicates_ids;
+    std::set<std::set<std::string>> words_in_docs;
     for (const int document_id : search_server) {
         std::set<std::string> words;
         for (const auto [word, freq] : search_server.GetWordFrequencies(document_id))
         {
             words.emplace(word);
         }
-        docs.emplace(document_id, words);
-    }
 
-    for (int i = 1; i < docs.size(); i++)
-    {
-        for (int j = 0; j < i; j++)
+        if (!words_in_docs.contains(words))
         {
-            if (docs[i] == docs[j])
-            {
-                ids.push_back(i);
-                std::cout << "Found duplicate document id " << i << "\n";
-                break;
-            }
+            words_in_docs.emplace(words);
+        }
+        else
+        {
+            std::cout << "Found duplicate document id " << document_id << "\n";
+            duplicates_ids.push_back(document_id);
         }
     }
 
-    for (const int id : ids)
+    for (const int& id : duplicates_ids)
     {
         search_server.RemoveDocument(id);
     }
